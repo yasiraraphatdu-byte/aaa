@@ -1,0 +1,68 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+          cache: 'maven'
+
+      - name: Build project with Maven
+        run: ./mvnw clean package
+
+      - name: Validate build artifact
+        run: |
+          if [ ! -f target/*.jar ]; then
+            echo "Build artifact not found!"
+            exit 1
+          fi
+          echo "Build artifact validated successfully"
+
+      - name: Simulate deployment - Pre-check
+        run: |
+          echo "Running pre-deployment checks..."
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          sleep 2
+          echo "Pre-deployment checks passed"
+
+      - name: Simulate deployment - Deploy
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          APP_CONFIG: ${{ secrets.APP_CONFIG }}
+        run: |
+          echo "Starting deployment to environment..."
+          echo "Using API_KEY: ${API_KEY:0:10}..."
+          echo "Using APP_CONFIG: ${APP_CONFIG:0:10}..."
+          sleep 3
+          echo "Application deployed successfully to ${{ github.ref_name }} environment"
+
+      - name: Simulate deployment - Post-check
+        run: |
+          echo "Running post-deployment verification..."
+          echo "Health check: PASSED"
+          echo "Smoke tests: PASSED"
+          echo "Deployment verification completed"
+
+      - name: Deployment summary
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "Environment: ${{ github.ref_name }}"
+          echo "Status: SUCCESS"
+          echo "Artifact: Build completed"
+          echo "Timestamp: $(date)"
